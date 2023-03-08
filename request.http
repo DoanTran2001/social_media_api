@@ -1,0 +1,78 @@
+@useRestClient
+###
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+
+{
+  "name": "Kiên Trần",
+  "email": "kientran@gmail.com",
+  "password": "kientran"
+}
+###
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "lannguyen@gmail.com",
+  "password": "lannguyen"
+}
+
+###
+POST http://localhost:5000/api/posts
+Content-Type: application/json
+Cookie: "access_token"=""
+
+{
+  "content": "Đây là bài post thứ nhất của Lan Nguyễn"
+}
+
+# Update post
+###
+PUT http://localhost:5000/api/posts/6405e36f6f63dc3d316787ef
+Content-Type: application/json
+
+{
+  "content": "Đây là post thứ nhất của Lan ......"
+}
+
+###
+GET http://localhost:5000/api/posts
+
+###
+GET http://localhost:5000/api/posts/6404a9d1583c6dcffb06ae8b
+
+###
+POST http://localhost:5000/api/comment/6405e2196f63dc3d316787e4
+Content-Type: application/json
+
+{
+  "content": "Bình luận thứ hai"
+}
+###
+GET http://localhost:5000/api/comment/6405e2196f63dc3d316787e4
+
+# Repcomment
+###
+POST http://localhost:5000/api/comment/6405e2196f63dc3d316787e4/6405ec4326108a72adcabe92
+Content-Type: application/json
+
+{
+  "content": "RepComment thứ hai"
+}
+###
+PUT http://localhost:5000/api/comment/6405e2196f63dc3d316787e4/6405ec4326108a72adcabe92/
+Content-Type: application/json
+
+{
+  "content": "Chỉnh sửa comment thứ nhất"
+}
+
+
+###
+PUT http://localhost:5000/api/comment/6405e2196f63dc3d316787e4/6405ec4326108a72adcabe92/6406029bc5f9e2a389498bbe
+Content-Type: application/json
+
+{
+  "content": "Chỉnh sửa repcomment thứ hai nè"
+}
