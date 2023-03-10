@@ -28,7 +28,7 @@ export const createPost = async (req, res, next) => {
 export const getPostByUser = async (req, res, next) => {
   try {
     const author = req.user.id;
-    const posts = await Post.find({ author });
+    const posts = await Post.find({ author }).populate('comments')
     return res.status(200).json({
       success: true,
       message: "Lấy các bài post thành công",

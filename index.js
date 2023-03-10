@@ -7,12 +7,16 @@ import cookieParser from 'cookie-parser'
 import authRouter from './routes/auth.js'
 import postRouter from './routes/post.js'
 import commentRouter from './routes/comment.js'
+import userRouter from './routes/user.js'
 
 
 const app = express()
 app.use(cookieParser())
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+  credentials: true,
+  origin: 'http://localhost:3000'
+}))
 dotenv.config()
 
 const connect = async () => {
@@ -27,6 +31,7 @@ const connect = async () => {
 app.use('/api/auth', authRouter)
 app.use('/api/posts', postRouter)
 app.use('/api/comment', commentRouter)
+app.use('/api/user', userRouter)
 
 app.use((err, req, res, next) => {
   const status = err.status || 500;

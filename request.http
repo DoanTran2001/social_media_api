@@ -14,9 +14,34 @@ POST http://localhost:5000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "lannguyen@gmail.com",
-  "password": "lannguyen"
+  "email": "doantran@gmail.com",
+  "password": "doantran"
 }
+
+// Lấy thông tin của user
+###
+GET http://localhost:5000/api/user/6400b87b00ff1fe387cbb4e3
+
+// Gửi yêu cầu kết bạn: POST http://localhost:5000/api/user/friend-requests/:recipientId
+###
+POST http://localhost:5000/api/user/friend-requests/64073e28109901c89f69bce7
+
+// Danh sách lời mời kết bạn
+###
+GET http://localhost:5000/api/user/friend-requests/list
+
+// phản hồi yêu cầu kết bạn: http://localhost:5000/api/user/:requestId
+###
+PUT http://localhost:5000/api/user/640b1e10422a007cb7d940cf
+Content-Type: application/json
+
+{
+  "status": "declined"
+}
+
+// Lấy danh sách bạn bè
+###
+GET http://localhost:5000/api/user/friends/6400b87b00ff1fe387cbb4e3
 
 ###
 POST http://localhost:5000/api/posts
