@@ -1,11 +1,12 @@
 import express from 'express'
-import { createSaveKey, getFriendBirthdayByMonth, getFriendBirthdayToday, getListFriend, getListRequestFriend, getPostByFriend, getSavedIds, getSavedPost, getSuggestFriend, getUser, requestAddFriend, responseRequestAddFriend, savedPost, searchUser, updateUser } from '../controllers/user.js'
+import { createSaveKey, getFriendBirthdayByMonth, getFriendBirthdayToday, getListFriend, getListRequestFriend, getPostByFriend, getSavedIds, getSavedPost, getSuggestFriend, getUser, requestAddFriend, responseRequestAddFriend, savedPost, searchUser, unSavedPost, updateUser } from '../controllers/user.js'
 import { verifyToken } from '../verifyToken.js'
 
 const router = express.Router()
 
 router.get('/:userId', getUser)
 router.post('/saved/:savedId/:postId', verifyToken, savedPost)
+router.post("/unsaved/:savedId/:postId", verifyToken, unSavedPost)
 router.get('/getSaved/saved-posts', verifyToken, getSavedPost)
 router.get('/getSaved/getSavedIds', verifyToken, getSavedIds)
 router.post('/saved/createSaveKey', verifyToken, createSaveKey)

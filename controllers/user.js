@@ -184,7 +184,6 @@ export const getListFriend = async (req, res, next) => {
 export const getPostByFriend = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    console.log("getPostByFriend ~ userId:", userId);
     const user = await User.findById(userId);
     if (!user) {
       return next(createErr(404, "User không tồn tại"));
@@ -193,10 +192,17 @@ export const getPostByFriend = async (req, res, next) => {
     const friendPosts = await Post.find({ author: { $in: friendIds } })
       .sort({ createdAt: -1 })
       .populate("author likes", "name avatar _id");
+    const data = friendPosts.map((post) => {
+      const foundKey = [...user.saved.entries()].find(([k, v]) =>
+        v.includes(post._id)
+      );
+      const savedKey = foundKey ? foundKey[0] : null
+      return { ...post.toObject(), savedKey };
+    });
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách bạn bè thành công",
-      data: friendPosts,
+      data,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -246,7 +252,7 @@ export const savedPost = async (req, res, next) => {
     if (user.saved.get(savedId).includes(postId)) {
       return res.status(200).json({
         success: true,
-        message: "bài viết đã được lưu trước đó",
+        message: "Bài viết đã được lưu trước đó",
       });
     }
     user.saved.get(savedId).push(postId);
@@ -260,6 +266,39 @@ export const savedPost = async (req, res, next) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Unsave Post
+export const unSavedPost = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { savedId, postId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại"));
+    }
+    if (!user.saved.get(savedId)) {
+      return res.status(200).json({
+        success: true,
+        message: "Người dùng chưa lưu bài viết vào key này",
+      });
+    }
+    const index = user.saved.get(savedId).indexOf(postId);
+    if (index === -1) {
+      return res.status(200).json({
+        success: true,
+        message: "Người dùng chưa lưu bài viết này",
+      });
+    }
+    user.saved.get(savedId).splice(index, 1);
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Hủy bỏ lưu bài viết thành công",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
 
 // Get Save post
 export const getSavedPost = async (req, res, next) => {
@@ -271,7 +310,6 @@ export const getSavedPost = async (req, res, next) => {
       return next(createErr(404, "User không tồn tại!"));
     }
     let savedPost = [];
-    console.log("getSavedPost ~ savedPost:", savedPost);
     if (key === "all") {
       savedPost = [...user.saved.values()].reduce((acc, cur) => {
         return acc.concat(cur);
@@ -293,10 +331,16 @@ export const getSavedPost = async (req, res, next) => {
       .populate("author likes", "name avatar _id")
       .skip(skip)
       .limit(limit);
+    const data = posts.map((post) => {
+      const foundKey = [...user.saved.entries()].find(([k, v]) =>
+        v.includes(post._id)
+      )[0];
+      return { ...post.toObject(), savedKey: foundKey };
+    });
     return res.status(200).json({
       success: true,
       message: `Lấy danh sách bài đăng đã lưu ở trong bộ sưu tập: ${key} thành công`,
-      data: posts,
+      data,
       meta: {
         totalPosts,
         totalPages,
@@ -417,7 +461,7 @@ export const getFriendBirthdayByMonth = async (req, res, next) => {
         _id: friend._id,
         name: friend.name,
         avatar: friend.avatar,
-        date_of_birth: friend.date_of_birth
+        date_of_birth: friend.date_of_birth,
       })),
     });
   } catch (error) {
