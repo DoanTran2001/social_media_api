@@ -4,7 +4,8 @@ import { createErr } from './error.js';
 // Xác thực token.
 export const verifyToken = (req, res, next) => {
   const token = req.cookies.access_token; // Lấy token trong cookie ở phần access_token
-  console.log("verifyToken ~ token:", token)
+  console.log(req.headers.cookie);
+  // console.log("verifyToken ~ token:", token)
   if(!token) return next(createErr(401, "Quá trình xác thực thất bại")); // Nếu không có token thì tạo lỗi 401 với thông báo "Bạn chưa được xác thực";
 
   // Kiểm tra JWT có đúng hay k

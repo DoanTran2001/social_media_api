@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import schedule from 'node-schedule'
 import { createErr } from "../error.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
@@ -42,7 +43,7 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   const { email, password: passwordBody } = req.body;
   try {
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email }).populate("friends", "name avatar")
     // Kiểm tra user đã có hay chưa
     if (!user) {
       return next(createErr(401, "Email hoặc mật khẩu không đúng!"));
@@ -73,6 +74,18 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const logout = async (req, res, next) => {
+  try {
+    res.clearCookie("access_token")
+    res.json({
+      success: true,
+      message: "Đăng xuất thành công"
+    })
+  } catch (error) {
+    
+  }
+}
+
 export const forgotPassword = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -84,7 +97,7 @@ export const forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
     const link = `http://localhost:3000/resetpassword/${user._id}/${token}`;
-    await sendEmail(user.email, "Password Reset", link);
+    await sendEmail(user.email, "Password Reset", link, user.name);
     res.send("password reset link sent to your email account");
   } catch (error) {}
 };
@@ -99,7 +112,9 @@ export const resetPassword = async (req, res, next) => {
     return next(createErr(400, "Token hết hạn hoặc không hợp lệ"));
   }
   // Cập nhật mật khẩu mới
-  user.password = req.body.password;
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync(req.body.password, salt);
+  user.password = hash;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
@@ -115,5 +130,4 @@ export const resetPassword = async (req, res, next) => {
       message: "Đặt lại mật khẩu thành công",
     });
 };
-
 

@@ -1,18 +1,44 @@
 import { createErr } from "../error.js";
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
+import Post from "../models/Post.js";
 
 // API lấy ra thông tin của user
 export const getUser = async (req, res, next) => {
   const { userId } = req.params;
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).populate({
+      path: "posts",
+      populate: {
+        path: "comments author",
+      },
+    });
     if (!user) {
       return next(createErr(404, "User không tồn tại!"));
     }
     return res.status(200).json({
       success: true,
       message: "Lấy thông tin user thành công",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json(error.message);
+  }
+};
+// API update thông tin user
+export const updateUser = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    // console.log(req.body);
+    const user = await User.findByIdAndUpdate(userId, req.body, { new: true });
+    // console.log(user);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại!"));
+    }
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật thông tin user thành công!",
       data: user,
     });
   } catch (error) {
@@ -69,7 +95,10 @@ export const requestAddFriend = async (req, res, next) => {
 export const getListRequestFriend = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const request = await FriendRequest.find({ recipient: userId });
+    const request = await FriendRequest.find({
+      recipient: userId,
+      status: "pending",
+    }).populate("requester", "avatar name");
 
     return res.status(200).json({
       success: true,
@@ -128,19 +157,292 @@ export const responseRequestAddFriend = async (req, res, next) => {
     }
   } catch (error) {}
 };
-// API lấy danh sách bạn bè
+// API lấy danh sách bạn bè và các bài post của bạn bè đó
 export const getListFriend = async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).populate("friends");
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại"));
+    }
+    const friendIds = user.friends;
+    const friends = await User.find({ _id: { $in: friendIds } });
+    const friendPosts = await Post.find({ author: { $in: friendIds } })
+      .sort({ createdAt: -1 })
+      .populate("author");
 
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách bạn bè thành công",
+      data: friends,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// Lấy ra những bài post của bạn bè
+export const getPostByFriend = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    console.log("getPostByFriend ~ userId:", userId);
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại"));
+    }
+    const friendIds = user.friends;
+    const friendPosts = await Post.find({ author: { $in: friendIds } })
+      .sort({ createdAt: -1 })
+      .populate("author likes", "name avatar _id");
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách bạn bè thành công",
+      data: friendPosts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// Lấy ra gợi ý bạn bè
+export const getSuggestFriend = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    // console.log("getSuggestFriend ~ userId:", userId)
+    const user = await User.findById(userId).populate("friends");
+    const friendIds = await User.distinct("friends", { _id: userId });
+    const suggestFriend = await User.find({
+      _id: { $ne: userId },
+      friends: { $nin: [userId, ...friendIds] },
+    });
+    console.log(suggestFriend);
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách gợi ý bạn bè thành công!",
+      data: suggestFriend,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Save post
+export const savedPost = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { savedId, postId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại"));
+    }
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(createErr(404, "Bài đăng không tồn tại"));
+    }
+    if (!user.saved) {
+      user.saved = new Map();
+    }
+    if (!user.saved.get(savedId)) {
+      user.saved.set(savedId, []);
+    }
+    if (user.saved.get(savedId).includes(postId)) {
+      return res.status(200).json({
+        success: true,
+        message: "bài viết đã được lưu trước đó",
+      });
+    }
+    user.saved.get(savedId).push(postId);
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Lưu bài viết thành công",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get Save post
+export const getSavedPost = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { key, page, limit } = req.query;
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại!"));
+    }
+    let savedPost = [];
+    console.log("getSavedPost ~ savedPost:", savedPost);
+    if (key === "all") {
+      savedPost = [...user.saved.values()].reduce((acc, cur) => {
+        return acc.concat(cur);
+      }, []);
+    } else {
+      savedPost = user.saved.get(key);
+    }
+    if (!savedPost) {
+      return res.status(200).json({
+        success: true,
+        message: `Không có bài đăng nào được lưu ở bộ sưu tập: ${key}`,
+        data: [],
+      });
+    }
+    const totalPosts = savedPost.length;
+    const totalPages = Math.ceil(totalPosts / limit);
+    const skip = (page - 1) * limit;
+    const posts = await Post.find({ _id: { $in: savedPost } })
+      .populate("author likes", "name avatar _id")
+      .skip(skip)
+      .limit(limit);
+    return res.status(200).json({
+      success: true,
+      message: `Lấy danh sách bài đăng đã lưu ở trong bộ sưu tập: ${key} thành công`,
+      data: posts,
+      meta: {
+        totalPosts,
+        totalPages,
+        currentPage: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// API create save key
+export const createSaveKey = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { key } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(createErr(404, "User không tồn tại!"));
+    }
+    if (user.saved.has(key)) {
+      return next(createErr(400, `Key ${key} đã tồn tại`));
+    }
+    user.saved.set(key, []);
+    await user.save();
+    return res.status(201).json({
+      success: true,
+      message: `Tạo key: ${key} thành công!`,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// Get savedID
+export const getSavedIds = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
     if (!user) {
       return next(createErr(404, "User không tồn tại"));
     }
     return res.status(200).json({
       success: true,
-      message: "Lấy danh sách bạn bè thành công",
-      data: user.friends,
+      data: user.saved,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getFriendBirthdayToday = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date();
+    const user = await User.findById(userId);
+    const friends = await User.aggregate([
+      {
+        $match: {
+          _id: { $in: user.friends },
+        },
+      },
+      {
+        $addFields: {
+          month: { $month: "$date_of_birth" },
+          day: { $dayOfMonth: "$date_of_birth" },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: ["$month", today.getMonth() + 1] },
+              { $eq: ["$day", today.getDate()] },
+            ],
+          },
+        },
+      },
+    ]);
+    return res.status(200).json({
+      success: true,
+      message: "Lấy user có ngày sinh là ngày hôm nay thành công!",
+      data: friends,
+    });
+    // res.json(friendsWithTodayBirthday);
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+export const getFriendBirthdayByMonth = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { month } = req.params;
+    const user = await User.findById(userId);
+    const friends = await User.aggregate([
+      {
+        $match: {
+          _id: { $in: user.friends },
+        },
+      },
+      {
+        $addFields: {
+          birthMonth: { $month: "$date_of_birth" },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $eq: ["$birthMonth", parseInt(month)],
+          },
+        },
+      },
+    ]);
+    return res.status(200).json({
+      success: true,
+      message: `Lấy user có ngày sinh là tháng ${month} thành công!`,
+      data: friends.map((friend) => ({
+        _id: friend._id,
+        name: friend.name,
+        avatar: friend.avatar,
+        date_of_birth: friend.date_of_birth
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const searchUser = async (req, res, next) => {
+  try {
+    const query = req.query.q;
+    if (!query) {
+      return next(createErr(400, "Missing query parameter"));
+    }
+    const users = await User.find({
+      $or: [
+        {
+          name: { $regex: query, $options: "i" },
+        },
+        { email: { $regex: query, $options: "i" } },
+      ],
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Search thành công!",
+      data: users,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

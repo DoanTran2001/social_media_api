@@ -34,6 +34,12 @@ const UserSchema = new Schema(
         ref: 'User'
       }
     ],
+    posts: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Post'
+      }
+    ],
     social: {
       facebook: { type: String },
       instagram: { type: String },
@@ -51,8 +57,23 @@ const UserSchema = new Schema(
     resetPasswordExpires: {
       type: Date,
     },
+    saved: {
+      type: Map,
+      of: [{
+        type: Schema.Types.ObjectId,
+        ref: "Post"
+      }],
+      default: {
+        "de-xem-sau": []
+      }
+    }
   },
   { timestamps: true }
 );
+
+// UserSchema.pre('save', function (next) {
+//   this.name = "Nodjes";
+//   next();
+// })
 
 export default mongoose.model("User", UserSchema);

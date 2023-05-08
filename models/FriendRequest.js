@@ -15,6 +15,6 @@ const FriendRequest = new Schema({
     enum: ['pending', 'accepted', 'declined'],
     default: 'pending'
   }
-})
+}, {timestamps: true})
 
 export default mongoose.model("FriendRequest", FriendRequest)

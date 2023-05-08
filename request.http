@@ -5,9 +5,9 @@ Content-Type: application/json
 
 
 {
-  "name": "Kiên Trần",
-  "email": "kientran@gmail.com",
-  "password": "kientran"
+  "name": "Binh nguyen",
+  "email": "binhnguyen@gmail.com",
+  "password": "binhnguyen"
 }
 ###
 POST http://localhost:5000/api/auth/login
@@ -18,13 +18,25 @@ Content-Type: application/json
   "password": "doantran"
 }
 
+// Search User
+###
+GET http://localhost:5000/api/user/search/user?q=doan
+
 // Lấy thông tin của user
 ###
 GET http://localhost:5000/api/user/6400b87b00ff1fe387cbb4e3
+// API update thông tin user
+###
+PUT http://localhost:5000/api/user/update/user
+Content-Type: application/json
+
+{
+  "phone": "068967890"
+}
 
 // Gửi yêu cầu kết bạn: POST http://localhost:5000/api/user/friend-requests/:recipientId
 ###
-POST http://localhost:5000/api/user/friend-requests/64073e28109901c89f69bce7
+POST http://localhost:5000/api/user/friend-requests/6400b87b00ff1fe387cbb4e3
 
 // Danh sách lời mời kết bạn
 ###
@@ -32,16 +44,22 @@ GET http://localhost:5000/api/user/friend-requests/list
 
 // phản hồi yêu cầu kết bạn: http://localhost:5000/api/user/:requestId
 ###
-PUT http://localhost:5000/api/user/640b1e10422a007cb7d940cf
+PUT http://localhost:5000/api/user/640bd7ea1a0d67b9dcbed050
 Content-Type: application/json
 
 {
-  "status": "declined"
+  "status": "accepted"
 }
 
 // Lấy danh sách bạn bè
 ###
-GET http://localhost:5000/api/user/friends/6400b87b00ff1fe387cbb4e3
+GET http://localhost:5000/api/user/friends/6405e1f56f63dc3d316787e2
+// Lấy danh sách gợi ý bạn bè
+###
+GET http://localhost:5000/api/user/friends-suggestions/list
+// Lấy danh sách bài post của bạn bè: http://localhost:5000/api/user/postFromFriends/:userId
+###
+GET http://localhost:5000/api/user/postFromFriends/list
 
 ###
 POST http://localhost:5000/api/posts
@@ -51,14 +69,22 @@ Cookie: "access_token"=""
 {
   "content": "Đây là bài post thứ nhất của Lan Nguyễn"
 }
-
+// API like Post
+###
+POST http://localhost:5000/api/posts/likes/6405e2e46f63dc3d316787ea
+// API unlike Post
+###
+DELETE http://localhost:5000/api/posts/unlikes/6405e2e46f63dc3d316787ea
+// API share post
+###
+POST http://localhost:5000/api/posts/shares/6405e2196f63dc3d316787e4
 # Update post
 ###
-PUT http://localhost:5000/api/posts/6405e36f6f63dc3d316787ef
+PUT http://localhost:5000/api/posts/6405e2196f63dc3d316787e4
 Content-Type: application/json
 
 {
-  "content": "Đây là post thứ nhất của Lan ......"
+  "content": "Đây là bài post thứ 2 của Đoan Trần ......"
 }
 
 ###
@@ -74,6 +100,7 @@ Content-Type: application/json
 {
   "content": "Bình luận thứ hai"
 }
+// API lấy ra comment của bài post
 ###
 GET http://localhost:5000/api/comment/6405e2196f63dc3d316787e4
 
@@ -83,7 +110,7 @@ POST http://localhost:5000/api/comment/6405e2196f63dc3d316787e4/6405ec4326108a72
 Content-Type: application/json
 
 {
-  "content": "RepComment thứ hai"
+  "content": "RepComment thứ ba"
 }
 ###
 PUT http://localhost:5000/api/comment/6405e2196f63dc3d316787e4/6405ec4326108a72adcabe92/
@@ -101,3 +128,38 @@ Content-Type: application/json
 {
   "content": "Chỉnh sửa repcomment thứ hai nè"
 }
+
+// API chức năng lưu bài viết
+###
+POST http://localhost:5000/api/user/saved/de-xem-sau/6405e2196f63dc3d316787e4
+// API lấy ra những bài viết đã lưu
+###
+GET http://localhost:5000/api/user/getSaved/saved-posts?key=de-xem-sau&page=1&limit=10
+// 
+###
+GET http://localhost:5000/api/user/getSaved/getSavedIds
+
+// ======== Chat =========
+
+// API create chat
+###
+POST http://localhost:5000/api/chat/messages
+Content-Type: application/json
+
+{
+  "receiverId": "6405e1f56f63dc3d316787e2",
+  "content": "Chào"
+}
+// API getChatMessages
+###
+GET http://localhost:5000/api/chat/messages/6400b87b00ff1fe387cbb4e3/6405e1f56f63dc3d316787e2 
+// API getChatContacts: API lấy danh sách người dùng đã chat với người dùng hiện tại
+###
+GET http://localhost:5000/api/chat/messages/getChatContacts
+  
+// getFriendBirthdayToday
+###
+GET http://localhost:5000/api/user/friends/birthday/today
+// getFriendBirthdayByMonth
+###
+GET http://localhost:5000/api/user/friends/birthday/2
