@@ -196,7 +196,7 @@ export const getPostByFriend = async (req, res, next) => {
       const foundKey = [...user.saved.entries()].find(([k, v]) =>
         v.includes(post._id)
       );
-      const savedKey = foundKey ? foundKey[0] : null
+      const savedKey = foundKey ? foundKey[0] : null;
       return { ...post.toObject(), savedKey };
     });
     return res.status(200).json({
@@ -212,14 +212,25 @@ export const getPostByFriend = async (req, res, next) => {
 export const getSuggestFriend = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    // console.log("getSuggestFriend ~ userId:", userId)
     const user = await User.findById(userId).populate("friends");
-    const friendIds = await User.distinct("friends", { _id: userId });
-    const suggestFriend = await User.find({
-      _id: { $ne: userId },
-      friends: { $nin: [userId, ...friendIds] },
+    // const friendIds = await User.distinct("friends", { _id: userId });
+    const friendIds = user.friends.map((friend) => friend._id);
+    const requests = await FriendRequest.find({
+      $or: [{ requester: userId }, { recipient: userId }],
     });
-    console.log(suggestFriend);
+    const requestIds = requests.map((friendRequest) => {
+      if (friendRequest.requester.toString() === userId) {
+        return friendRequest.recipient;
+      } else {
+        return friendRequest.requester;
+      }
+    });
+    const suggestFriend = await User.find({
+      $and: [
+        { _id: { $ne: userId } },
+        { _id: { $nin: [...friendIds, ...requestIds, userId] } }, // không có trong danh sách bạn bè, yêu cầu kết bạn và không phải là chính mình
+      ],
+    });
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách gợi ý bạn bè thành công!",
@@ -298,7 +309,7 @@ export const unSavedPost = async (req, res, next) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
 
 // Get Save post
 export const getSavedPost = async (req, res, next) => {
