@@ -86,6 +86,27 @@ export const logout = async (req, res, next) => {
   }
 }
 
+export const changePassword = async (req, res, next) => {
+  try {
+    const {oldPassword, newPassword} = req.body
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if(!isMatch) {
+      return next(createErr(400, "Mật khẩu cũ không đúng!"))
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    await User.findByIdAndUpdate(userId, { password: hashedPassword });
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật mật khẩu thành công!"
+    })
+  } catch (error) {
+    res.status(500).json(error.message);
+  }
+}
+
 export const forgotPassword = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });

@@ -155,7 +155,10 @@ export const responseRequestAddFriend = async (req, res, next) => {
         message: "Xóa kết bạn thành công",
       });
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: error.message });
+  }
 };
 // API lấy danh sách bạn bè và các bài post của bạn bè đó
 export const getListFriend = async (req, res, next) => {
