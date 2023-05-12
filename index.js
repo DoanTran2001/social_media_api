@@ -37,7 +37,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://social-media-ui-jade.vercel.app/",
+      "https://social-media-ui-jade.vercel.app",
     ],
   })
 );
